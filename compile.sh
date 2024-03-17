@@ -27,7 +27,7 @@ clojure -T:build:native-image compile
 native-image \
     -cp "$(clojure -Spath):target/classes" \
     -H:ConfigurationFileDirectories=config \
-    -H:Name=hello-world \
+    -H:Name=tddpirate_membrane \
     -Djava.awt.headless=false \
     -H:+ReportExceptionStackTraces \
     -J-Dclojure.spec.skip-macros=true \
@@ -36,4 +36,4 @@ native-image \
     --features=clj_easy.graal_build_time.InitClojureClasses \
     --verbose \
     --no-fallback \
-    com.phronemophobic.membrane.hello_world
+    pod.tddpirate.membrane

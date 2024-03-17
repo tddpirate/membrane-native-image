@@ -22,7 +22,7 @@
                   :java-opts ["-Dtech.v3.datatype.graal-native=true"
                               "-Dclojure.compiler.direct-linking=true"
                               "-Dclojure.spec.skip-macros=true"]
-                  :ns-compile '[com.phronemophobic.membrane.hello-world]})
+                  :ns-compile '[pod.tddpirate.membrane]})
   #_(b/javac {:src-dirs ["src-java"]
             :class-dir class-dir
             :basis basis
