@@ -21,11 +21,12 @@ java -version
 
 clojure -T:build:native-image compile
 
+# Options which do not exist in liberica's native-image
+#    -H:+UnlockExperimentalVMOptions \
 
 native-image \
     -cp "$(clojure -Spath):target/classes" \
     -H:ConfigurationFileDirectories=config \
-    -H:+UnlockExperimentalVMOptions \
     -H:Name=hello-world \
     -Djava.awt.headless=false \
     -H:+ReportExceptionStackTraces \
