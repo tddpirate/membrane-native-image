@@ -15,3 +15,5 @@
 .hg/
 .clerk
 hello-world
+/config
+hello-world.build_artifacts.txt
