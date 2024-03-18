@@ -131,10 +131,10 @@
             :describe (do
                         (debug "===> executing :describe")
                         (write {"format" "edn"
-                                  "namespaces" [(describe-ns (find-ns 'membrane.java2d))
-                                                (describe-ns (find-ns 'membrane.ui))
-                                                (describe-ns (find-ns 'membrane.component))
-                                                (describe-ns (find-ns 'membrane.basic-components))
+                                  "namespaces" [(describe-ns "pod.tddpirate." (find-ns 'membrane.java2d))
+                                                (describe-ns "pod.tddpirate." (find-ns 'membrane.ui))
+                                                (describe-ns "pod.tddpirate." (find-ns 'membrane.component))
+                                                (describe-ns "pod.tddpirate." (find-ns 'membrane.basic-components))
                                                 ]
                                   "id" id})
                           (recur))
