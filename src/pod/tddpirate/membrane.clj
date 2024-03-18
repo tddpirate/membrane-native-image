@@ -131,13 +131,32 @@
             :describe (do
                         (debug "===> executing :describe")
                         (write {"format" "edn"
-                                  "namespaces" [(describe-ns "pod.tddpirate." (find-ns 'membrane.java2d))
-                                                (describe-ns "pod.tddpirate." (find-ns 'membrane.ui))
-                                                (describe-ns "pod.tddpirate." (find-ns 'membrane.component))
-                                                (describe-ns "pod.tddpirate." (find-ns 'membrane.basic-components))
-                                                ]
-                                  "id" id})
-                          (recur))
+                                "namespaces" [(describe-ns "pod.tddpirate." (find-ns 'membrane.java2d))
+                                              (describe-ns "pod.tddpirate." (find-ns 'membrane.ui))
+                                              (describe-ns "pod.tddpirate." (find-ns 'membrane.component))
+                                              (describe-ns "pod.tddpirate." (find-ns 'membrane.basic-components))
+                                              ]
+                                "readers" {"membrane.ui.Font" "pod.tddpirate.membrane.ui/Font"
+                                           "membrane.ui.Label" "pod.tddpirate.membrane.ui/Label"
+                                           ;; All types having IDraw
+                                           "membrane.ui.WithStrokeWidth" "pod.tddpirate.membrane.ui/WithStrokeWidth"
+                                           "membrane.ui.WithStyle"       "pod.tddpirate.membrane.ui/WithStyle"
+                                           ;;"membrane.ui.LabelRaw"        "pod.tddpirate.membrane.ui/"
+                                           "membrane.ui.Image"           "pod.tddpirate.membrane.ui/Image"
+                                           "membrane.ui.Translate"       "pod.tddpirate.membrane.ui/Translate"
+                                           "membrane.ui.TextSelection"   "pod.tddpirate.membrane.ui/TextTranslation"
+                                           "membrane.ui.TextCursor"      "pod.tddpirate.membrane.ui/TextCursor"
+                                           "membrane.ui.Path"            "pod.tddpirate.membrane.ui/Path"
+                                           "membrane.ui.RoundedRectangle" "pod.tddpirate.membrane.ui/RoundedRectangle"
+                                           "membrane.ui.WithColor"       "pod.tddpirate.membrane.ui/WithColor"
+                                           "membrane.ui.Scale"           "pod.tddpirate.membrane.ui/Scale"
+                                           "membrane.ui.Arc"             "pod.tddpirate.membrane.ui/Arc"
+                                           "membrane.ui.ScissorView"     "pod.tddpirate.membrane.ui/ScissorView"
+                                           "membrane.ui.ScrollView"      "pod.tddpirate.membrane.ui/ScrollView"
+                                           ;;"javax.swing.JComponent"      "pod.tddpirate.membrane.ui/"
+                                           }
+                                "id" id})
+                        (recur))
             :invoke (do (try
                           (let [var (-> (get message "var")
                                         read-string
