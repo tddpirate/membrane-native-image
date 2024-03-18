@@ -163,7 +163,22 @@
                                         symbol)
                                 args (get message "args")
                                 args (read-string args)
-                                args (edn/read-string args)]
+                                args (try
+                                       (edn/read-string args)
+                                       (catch Throwable e
+                                         (binding [*out* *err*]
+                                           (println e))
+                                         (let [reply {"ex-message-edn/read-string" (.getMessage e)
+                                                      "ex-data-edn/read-string" (pr-str
+                                                                                 (assoc (ex-data e)
+                                                                                        :type (class e)))
+                                                      "*** args actually read ***" args
+                                                      "id" id
+                                                      "status" ["done" "error"]}]
+                                           (debug "===> executing :invoke/edn/read-string threw an exception")
+                                           (write reply)
+                                           nil)))
+                                ]
                             (if-let [f (var-get (lookup var))]
                               (let [value (pr-str (apply f args))
                                     reply {"value" value
