@@ -7,7 +7,8 @@
             [membrane.component]
             [membrane.basic-components]
             [clojure.edn :as edn]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.walk :refer [postwalk]])
   (:import [java.io PushbackInputStream])
   (:gen-class))
 
@@ -102,8 +103,9 @@
               nsmap->maps)})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; commented out code
 
-(defn pod-ns---example-of-CODE-usge
+#_(defn pod-ns---example-of-CODE-usge
   "!!! TODO Not actually used, retained to serve as an example."
   [name]
   {"name" name
@@ -114,6 +116,75 @@
   (print (print* run-output))
   (flush))"}
            {"name" "run!"}]})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Proxies for objects which cannot be properly
+;; serialized and deserialized
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Source of inspiration:
+;; https://github.com/babashka/babashka-sql-pods/blob/master/src/pod/babashka/sql.clj
+
+(def proxies (ref {}))    ;; object -> uuid
+(def revproxies (ref {})) ;; uuid -> object
+
+(defn simple-obj?
+  "Is the argument fully serializable via EDN?"
+  [obj]
+  (or
+   (number? obj)
+   (string? obj)
+   (char? obj)
+   (keyword? obj)
+   (symbol? obj)
+   (list? obj)
+   (vector? obj)
+   (set? obj)
+   (map? obj)))
+
+(defn obj->proxy
+  "If the object is \"simple\" (fully serializable via EDN), return it.
+  Otherwise, add it to map (if necessary), and return its proxy."
+  [obj]
+  (println "!!! entered obj->proxy")
+  (clojure.pprint/pprint obj)
+  (if (simple-obj? obj)
+    obj
+    (if-let [uuidexists (get @proxies obj)]
+      {::proxy uuidexists}
+      (let [uuid (str (java.util.UUID/randomUUID))]
+        (dosync
+         (alter proxies assoc obj uuid)
+         (alter revproxies assoc uuid obj))
+        {::proxy uuid}))))
+
+(defn proxy->obj
+  "If the argument is a proxy (identified as {::proxy string}),
+  convert it back into proxied object.
+  Otherwise, return the argument."
+  [arg]
+  (println "!!! entered proxy->obj")
+  (clojure.pprint/pprint arg)
+  (if (and (map? arg) (::proxy arg))
+    (get @revproxies (::proxy arg))
+    arg))
+
+(defn proxify
+  "Traverse the argument form and transform any \"complex\" item in it
+  into its proxy."
+  [form]
+  (postwalk obj->proxy form))
+
+(defn deproxify
+  "Traverse the argument form and transform any found proxy in it
+  into its original form.
+  Proxy objects are simple maps, so their contents are not disturbed."
+  [form]
+  (postwalk proxy->obj form))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Main function for running the pod
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn run-pod []
   (loop []
@@ -136,25 +207,6 @@
                                               (describe-ns "pod.tddpirate." (find-ns 'membrane.component))
                                               (describe-ns "pod.tddpirate." (find-ns 'membrane.basic-components))
                                               ]
-                                "readers" {"membrane.ui.Font" "pod.tddpirate.membrane.ui/Font"
-                                           "membrane.ui.Label" "pod.tddpirate.membrane.ui/Label"
-                                           ;; All types having IDraw
-                                           "membrane.ui.WithStrokeWidth" "pod.tddpirate.membrane.ui/WithStrokeWidth"
-                                           "membrane.ui.WithStyle"       "pod.tddpirate.membrane.ui/WithStyle"
-                                           ;;"membrane.ui.LabelRaw"        "pod.tddpirate.membrane.ui/"
-                                           "membrane.ui.Image"           "pod.tddpirate.membrane.ui/Image"
-                                           "membrane.ui.Translate"       "pod.tddpirate.membrane.ui/Translate"
-                                           "membrane.ui.TextSelection"   "pod.tddpirate.membrane.ui/TextTranslation"
-                                           "membrane.ui.TextCursor"      "pod.tddpirate.membrane.ui/TextCursor"
-                                           "membrane.ui.Path"            "pod.tddpirate.membrane.ui/Path"
-                                           "membrane.ui.RoundedRectangle" "pod.tddpirate.membrane.ui/RoundedRectangle"
-                                           "membrane.ui.WithColor"       "pod.tddpirate.membrane.ui/WithColor"
-                                           "membrane.ui.Scale"           "pod.tddpirate.membrane.ui/Scale"
-                                           "membrane.ui.Arc"             "pod.tddpirate.membrane.ui/Arc"
-                                           "membrane.ui.ScissorView"     "pod.tddpirate.membrane.ui/ScissorView"
-                                           "membrane.ui.ScrollView"      "pod.tddpirate.membrane.ui/ScrollView"
-                                           ;;"javax.swing.JComponent"      "pod.tddpirate.membrane.ui/"
-                                           }
                                 "id" id})
                         (recur))
             :invoke (do (try
