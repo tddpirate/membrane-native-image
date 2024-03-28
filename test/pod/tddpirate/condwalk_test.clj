@@ -60,10 +60,10 @@
         proxywannabe (sut/obj->proxy tmpproxies tmprevproxies tmpUUIDfunc complicated-obj)
         ]
     (is (map? proxywannabe))
-    (let [proxyid (:condwalk/proxy proxywannabe)]
+    (let [proxyid (:pod.tddpirate.condwalk/proxy proxywannabe)]
       (is (= (str 'dummy-key) proxyid))
-      (is (= complicated-obj (proxyid @tmpproxies)))
-      (is (= proxyid (complicated-obj @tmpproxies))))))
+      (is (= complicated-obj (get @tmprevproxies proxyid)))
+      (is (= proxyid (get @tmpproxies complicated-obj))))))
 
 
   
@@ -74,7 +74,9 @@
     (run-test-simple :1984)
     (run-test-simple [5 8 \w]))
   (testing "proxify \"complicated\" object"
-    (run-test-complicated #(str 'boo))))
+    (run-test-complicated #(str 'boo))
+    (run-test-complicated assoc)))
+    
 
 
 ;; !!! Use with-redefs to redefine java.util.UUID/randomUUID
