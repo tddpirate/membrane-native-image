@@ -23,4 +23,16 @@
   {
    :jvm-opts ["-XX:+UnlockDiagnosticVMOptions"
               "-XX:+DebugNonSafepoints"
-              "-XX:-HeapDumpOnOutOfMemoryError"]}}}
+              "-XX:-HeapDumpOnOutOfMemoryError"]}
+  :test   ;; invoke using clj -X:test
+  {
+   :extra-paths ["test"]
+   :extra-deps  {lambdaisland/kaocha {:mvn/version "1.87.1366"}}
+   :exec-fn     kaocha.runner/exec-fn
+   :exec-args   {:skip-meta :slow}}
+
+  :watch  ;; invoke using clj -X:test:watch
+  {
+   :exec-args   {:watch?     true
+                 :skip-meta  :slow
+                 :fail-fast? true}}}}

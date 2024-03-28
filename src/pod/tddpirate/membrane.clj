@@ -7,8 +7,8 @@
             [membrane.component]
             [membrane.basic-components]
             [clojure.edn :as edn]
-            [clojure.java.io :as io]
-            [clojure.walk :refer [postwalk]])
+            [clojure.java.io :as io])
+  (:use     [pod.tddpirate.condwalk])
   (:import [java.io PushbackInputStream])
   (:gen-class))
 
@@ -117,70 +117,7 @@
   (flush))"}
            {"name" "run!"}]})
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Proxies for objects which cannot be properly
-;; serialized and deserialized
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Source of inspiration:
-;; https://github.com/babashka/babashka-sql-pods/blob/master/src/pod/babashka/sql.clj
-
-(def proxies (ref {}))    ;; object -> uuid
-(def revproxies (ref {})) ;; uuid -> object
-
-(defn simple-obj?
-  "Is the argument fully serializable via EDN?"
-  [obj]
-  (or
-   (number? obj)
-   (string? obj)
-   (char? obj)
-   (keyword? obj)
-   (symbol? obj)
-   (list? obj)
-   (vector? obj)
-   (set? obj)
-   (map? obj)))
-
-(defn obj->proxy
-  "If the object is \"simple\" (fully serializable via EDN), return it.
-  Otherwise, add it to map (if necessary), and return its proxy."
-  [obj]
-  (println "!!! entered obj->proxy")
-  (clojure.pprint/pprint obj)
-  (if (simple-obj? obj)
-    obj
-    (if-let [uuidexists (get @proxies obj)]
-      {::proxy uuidexists}
-      (let [uuid (str (java.util.UUID/randomUUID))]
-        (dosync
-         (alter proxies assoc obj uuid)
-         (alter revproxies assoc uuid obj))
-        {::proxy uuid}))))
-
-(defn proxy->obj
-  "If the argument is a proxy (identified as {::proxy string}),
-  convert it back into proxied object.
-  Otherwise, return the argument."
-  [arg]
-  (println "!!! entered proxy->obj")
-  (clojure.pprint/pprint arg)
-  (if (and (map? arg) (::proxy arg))
-    (get @revproxies (::proxy arg))
-    arg))
-
-(defn proxify
-  "Traverse the argument form and transform any \"complex\" item in it
-  into its proxy."
-  [form]
-  (postwalk obj->proxy form))
-
-(defn deproxify
-  "Traverse the argument form and transform any found proxy in it
-  into its original form.
-  Proxy objects are simple maps, so their contents are not disturbed."
-  [form]
-  (postwalk proxy->obj form))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main function for running the pod
