@@ -4,9 +4,100 @@
   (:gen-class))
 
 ;; This module has two levels of code (in Dijkstra's sense):
-;; 1. Lowest level - condwalk, performs conditional walk on a tree.
-;; 2. Next level - escape and unescape "complicated" objects.
+;; 1. Lowest level - escape and unescape "complicated" objects.
+;; 2. Next level - condwalk, performs conditional walk on a tree.
 ;; In the future, we'll split this module into two modules.
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Proxies for objects which cannot be properly
+;; serialized and deserialized ("complicated" objects).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Source of inspiration:
+;; https://github.com/babashka/babashka-sql-pods/blob/master/src/pod/babashka/sql.clj
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Lowest level - identify, escape and unescape "complicated" objects.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Identify "complicated" objects
+(defn simple-obj?
+  "Is the argument fully serializable via EDN?"
+  [obj]
+  (or
+   (number? obj)
+   (string? obj)
+   (char? obj)
+   (keyword? obj)
+   (symbol? obj)
+   (list? obj)
+   (vector? obj)
+   (set? obj)
+   (map? obj)
+   (nil? obj)))
+
+
+;; Escape a "complicated object" by proxying it.
+(defn obj->proxy
+  "If the object is \"simple\" (fully serializable via EDN), return false.
+  Otherwise, add it to map (if necessary), and return its proxy.
+  The arguments are:
+  - proxies - a (ref {}) which maps object to string (typically an UUID).
+  - revproxies - a (ref {}) which maps string (typically an UUID) to object.
+  - UUID-func - creates random strings, typically java.util.UUID/randomUUID
+  "
+  [proxies revproxies UUID-func obj]
+  (if (simple-obj? obj)
+    false
+    (if-let [uuidexists (get @proxies obj)] ;; Otherwise, proxy it.
+      {::proxy uuidexists}                  ;; object already has a proxy.
+      (let [uuid (str (UUID-func))]         ;; Otherwise, create a new proxy.
+        (dosync
+         (alter proxies assoc obj uuid)
+         (alter revproxies assoc uuid obj))
+        {::proxy uuid}))))
+
+;; Unescape proxy of a "complicated object"
+(defn proxy->obj
+  "If the argument is a proxy (identified as {::proxy string}),
+  convert it back into proxied object.
+  Otherwise, return false.
+  - revproxies - a (ref {}) which maps string (typically an UUID) to object.
+  "
+  [revproxies arg]
+  (if-let [proxy (and (map? arg) (::proxy arg))]
+    (get @revproxies proxy)
+    false))
+
+
+
+
+(defn proxify
+  "Traverse the argument form and transform any \"complex\" item in it
+  into its proxy."
+  [form]
+  (postwalk obj->proxy form))
+
+(defn deproxify
+  "Traverse the argument form and transform any found proxy in it
+  into its original form.
+  Proxy objects are simple maps, so their contents are not disturbed."
+  [form]
+  (postwalk proxy->obj form))
+
+
+(def proxies (ref {}))    ;; object -> uuid
+(def revproxies (ref {})) ;; uuid -> object
+(defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
+
+
+
+
+
+
+
 
 
 ;;;;!!!! Fix code, given that 'walk' walks only a single form, without
@@ -53,78 +144,3 @@
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Next level - escape and unescape "complicated" objects.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Proxies for objects which cannot be properly
-;; serialized and deserialized
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Source of inspiration:
-;; https://github.com/babashka/babashka-sql-pods/blob/master/src/pod/babashka/sql.clj
-
-(def proxies (ref {}))    ;; object -> uuid
-(def revproxies (ref {})) ;; uuid -> object
-
-(defn simple-obj?
-  "Is the argument fully serializable via EDN?"
-  [obj]
-  (or
-   (number? obj)
-   (string? obj)
-   (char? obj)
-   (keyword? obj)
-   (symbol? obj)
-   (list? obj)
-   (vector? obj)
-   (set? obj)
-   (map? obj)))
-
-
-
-
-(defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
-(defn obj->proxy
-  "If the object is \"simple\" (fully serializable via EDN), return it.
-  Otherwise, add it to map (if necessary), and return its proxy."
-  [obj]
-  (println "!!! entered obj->proxy")
-  (clojure.pprint/pprint obj)
-  (if (simple-obj? obj)
-    obj
-    (if-let [uuidexists (get @proxies obj)]
-      {::proxy uuidexists}
-      (let [uuid (str (UUID-func))]
-        (dosync
-         (alter proxies assoc obj uuid)
-         (alter revproxies assoc uuid obj))
-        {::proxy uuid}))))
-
-(defn proxy->obj
-  "If the argument is a proxy (identified as {::proxy string}),
-  convert it back into proxied object.
-  Otherwise, return the argument."
-  [arg]
-  (println "!!! entered proxy->obj")
-  (clojure.pprint/pprint arg)
-  (if (and (map? arg) (::proxy arg))
-    (get @revproxies (::proxy arg))
-    arg))
-
-
-(defn proxify
-  "Traverse the argument form and transform any \"complex\" item in it
-  into its proxy."
-  [form]
-  (postwalk obj->proxy form))
-
-(defn deproxify
-  "Traverse the argument form and transform any found proxy in it
-  into its original form.
-  Proxy objects are simple maps, so their contents are not disturbed."
-  [form]
-  (postwalk proxy->obj form))
