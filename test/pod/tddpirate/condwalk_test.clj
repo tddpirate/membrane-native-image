@@ -63,7 +63,9 @@
     (let [proxyid (:pod.tddpirate.condwalk/proxy proxywannabe)]
       (is (= (str 'dummy-key) proxyid))
       (is (= complicated-obj (get @tmprevproxies proxyid)))
-      (is (= proxyid (get @tmpproxies complicated-obj))))))
+      (is (= proxyid (get @tmpproxies complicated-obj)))
+      (is (= (list complicated-obj) (keys @tmpproxies)))
+      (is (= (list (str 'dummy-key)) (keys @tmprevproxies))))))
 
 
   
