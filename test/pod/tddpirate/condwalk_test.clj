@@ -136,12 +136,10 @@
     (is (= '(2 5 10 (17 26 (37))) (sut/condwalk approve-always number-inc '(1 4 9 (16 25 (36)))))))
   (testing "complicated condwalk cases"
     (is (= [2 5 10 [1 2] [4 5] 26] (sut/condwalk #((complement =) [1 2] %) number-inc [1 4 9 [1 2] [3 4] 25])))))
-    
-    
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tests for
+;; condwalk using our 'approve' and 'func' functions.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
-;; !!! Use with-redefs to redefine java.util.UUID/randomUUID
-;; !!! Example: clj-kondo/test/clj_kondo/main_test.clj:2066:(with-redefs,,,)
-
+;; Our 'approve' function for proxify is simply 'simple-obj?'.

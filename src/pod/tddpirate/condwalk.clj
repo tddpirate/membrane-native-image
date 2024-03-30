@@ -1,6 +1,6 @@
 (ns pod.tddpirate.condwalk
   {:no-doc true}
-  (:require [clojure.walk :refer [walk postwalk]])
+  (:require [clojure.walk :refer [walk]])
   (:gen-class))
 
 ;; This module has two levels of code (in Dijkstra's sense):
@@ -41,7 +41,7 @@
 
 ;; Escape a "complicated object" by proxying it.
 (defn obj->proxy
-  "If the object is \"simple\" (fully serializable via EDN), return false.
+  "If the object is \"simple\" (fully serializable via EDN), return the object.
   Otherwise, add it to map (if necessary), and return its proxy.
   The arguments are:
   - proxies - a (ref {}) which maps object to string (typically an UUID).
@@ -50,7 +50,7 @@
   "
   [proxies revproxies UUID-func obj]
   (if (simple-obj? obj)
-    false
+    obj
     (if-let [uuidexists (get @proxies obj)] ;; Otherwise, proxy it.
       {::proxy uuidexists}                  ;; object already has a proxy.
       (let [uuid (str (UUID-func))]         ;; Otherwise, create a new proxy.
@@ -59,17 +59,26 @@
          (alter revproxies assoc uuid obj))
         {::proxy uuid}))))
 
+
 ;; Unescape proxy of a "complicated object"
+(defn proxy?*
+  "Return a falsey value (nil or false) if the argument is not a proxy.
+  Otherwise, return a truthy value which happens to be the proxied object.
+  Note that {::proxy false} would be misidentified, but it should never occur
+  because false and nil are \"simple\" objects."
+  [form]
+  (and (map? form) (::proxy form)))
+
 (defn proxy->obj
   "If the argument is a proxy (identified as {::proxy string}),
   convert it back into proxied object.
-  Otherwise, return false.
+  Otherwise, return the argument unchanged.
   - revproxies - a (ref {}) which maps string (typically an UUID) to object.
   "
   [revproxies arg]
-  (if-let [proxy (and (map? arg) (::proxy arg))]
+  (if-let [proxy (proxy?* arg)]
     (get @revproxies proxy)
-    false))
+    arg))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -105,30 +114,34 @@
 
 
 
-;;!!!!!!!!!!!!!!
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Code for use by the rest of the pod code.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def proxies (ref {}))    ;; object -> uuid
+(def revproxies (ref {})) ;; uuid -> object
+(defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
 
 
 (defn proxify
   "Traverse the argument form and transform any \"complex\" item in it
   into its proxy."
   [form]
-  (postwalk obj->proxy form))
+  (condwalk simple-obj?
+            (partial obj->proxy proxies revproxies UUID-func) ;; obj->proxy invokes simple-obj? too - how to eliminate the double invocation?
+            form))
+
+  
 
 (defn deproxify
   "Traverse the argument form and transform any found proxy in it
   into its original form.
   Proxy objects are simple maps, so their contents are not disturbed."
   [form]
-  (postwalk proxy->obj form))
+  (condwalk proxy?*
+            (partial proxy->obj revproxies)
+            form))
 
-
-(def proxies (ref {}))    ;; object -> uuid
-(def revproxies (ref {})) ;; uuid -> object
-(defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; End of condwalk.clj
