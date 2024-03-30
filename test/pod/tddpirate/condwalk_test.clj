@@ -75,7 +75,7 @@
 
 
   
-(deftest test-proxify
+(deftest test-proxify-primitives
   (testing "proxify \"simple\" object"
     (run-test-proxify-simple 42)
     (run-test-proxify-simple "Forth")
@@ -99,7 +99,7 @@
         proxy {:pod.tddpirate.condwalk/proxy (str 'dummy-key2)}]
     (is (= obj (sut/proxy->obj tmprevproxies proxy)))))
 
-(deftest test-deproxify
+(deftest test-deproxify-primitives
   (testing "deproxify \"simple\" object"
     (run-test-deproxify-simple 43)
     (run-test-deproxify-simple "Fifth")
@@ -141,5 +141,21 @@
 ;; Tests for
 ;; condwalk using our 'approve' and 'func' functions.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(deftest test-proxify
+  (is (= 1 (sut/proxify 1)))
+  (is (= '("a" :b 7) (sut/proxify '("a" :b 7))))
+  (let [proxy1 (sut/proxify '(+ inc))
+        keyplus (get @sut/proxies +)
+        keyinc (get @sut/proxies inc)]
+    (is (= '({:pod.tddpirate.condwalk/proxy keyplus} {:pod.tddpirate.condwalk/proxy inc}) proxy1))))
+
+(deftest test-deproxify
+  (is (= 1 (sut/deproxify 1)))
+  (is (= '("c" :d 8) (sut/deproxify '("c" :d 8))))
+  (let [keyminus (:pod.tddpirate.condwalk/proxy (sut/proxify -))
+        keydec (:pod.tddpirate.condwalk/proxy (sut/proxify dec))]
+    (is (= '(- dec) (sut/deproxify '({:pod.tddpirate.condwalk/proxy keyminus} {:pod.tddpirate.condwalk/proxy keydec}))))))
 
 ;; Our 'approve' function for proxify is simply 'simple-obj?'.
