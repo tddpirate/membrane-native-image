@@ -10,6 +10,12 @@
     )
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tests for
+;; proxies for objects which cannot be properly
+;; serialized and deserialized ("complicated" objects).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (def non-simple-obj?
   (complement sut/simple-obj?))
@@ -101,6 +107,39 @@
   (testing "deproxify \"complicated\" object"
     (run-test-deproxify-complicated ref)
     (run-test-deproxify-complicated str)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tests for
+;; the condwalk function
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn approve-always
+  "Always approve the argument"
+  [arg]
+  true)
+
+(defn number-inc
+  "Increment the argument only if it is an argument.
+  A string is enclosed inside \"earmuffs\"."
+  [arg]
+  (cond
+    (number? arg) (inc arg)
+    (string? arg) (str "*" arg "*")
+    :else arg))
+
+
+(deftest test-condwalk
+  (testing "simple condwalk cases"
+    (is (= 1 (sut/condwalk approve-always number-inc 0)))
+    (is (= "*A*" (sut/condwalk approve-always number-inc "A")))
+    (is (= [2 5 10 [17 26 [37]]] (sut/condwalk approve-always number-inc [1 4 9 [16 25 [36]]])))
+    (is (= '(2 5 10 (17 26 (37))) (sut/condwalk approve-always number-inc '(1 4 9 (16 25 (36)))))))
+  (testing "complicated condwalk cases"
+    (is (= [2 5 10 [1 2] [4 5] 26] (sut/condwalk #((complement =) [1 2] %) number-inc [1 4 9 [1 2] [3 4] 25])))))
+    
+    
+
+
 
 
 ;; !!! Use with-redefs to redefine java.util.UUID/randomUUID
