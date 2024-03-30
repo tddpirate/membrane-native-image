@@ -72,27 +72,11 @@
     false))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The condwalk function
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-(defn proxify
-  "Traverse the argument form and transform any \"complex\" item in it
-  into its proxy."
-  [form]
-  (postwalk obj->proxy form))
-
-(defn deproxify
-  "Traverse the argument form and transform any found proxy in it
-  into its original form.
-  Proxy objects are simple maps, so their contents are not disturbed."
-  [form]
-  (postwalk proxy->obj form))
-
-
-(def proxies (ref {}))    ;; object -> uuid
-(def revproxies (ref {})) ;; uuid -> object
-(defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
-
-
+;;!!!!!!!!!!!!!!
 
 
 
@@ -144,3 +128,31 @@
 
 
 
+;;!!!!!!!!!!!!!!
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Code for use by the rest of the pod code.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defn proxify
+  "Traverse the argument form and transform any \"complex\" item in it
+  into its proxy."
+  [form]
+  (postwalk obj->proxy form))
+
+(defn deproxify
+  "Traverse the argument form and transform any found proxy in it
+  into its original form.
+  Proxy objects are simple maps, so their contents are not disturbed."
+  [form]
+  (postwalk proxy->obj form))
+
+
+(def proxies (ref {}))    ;; object -> uuid
+(def revproxies (ref {})) ;; uuid -> object
+(defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; End of condwalk.clj
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

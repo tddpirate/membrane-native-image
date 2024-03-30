@@ -39,7 +39,7 @@
     ;;(is (non-simple-obj?   ;; !!! add more types, such as Java interop.
     ))
 
-(defn run-test-simple
+(defn run-test-proxify-simple
   "Run a obj->proxy test on a \"simple\" object"
   [simple-obj]
   (let [tmpproxies (ref {})
@@ -51,7 +51,7 @@
     (is (= {} @tmpproxies))
     (is (= {} @tmprevproxies))))
 
-(defn run-test-complicated
+(defn run-test-proxify-complicated
   "Run a obj->proxy test on a \"complicated\" object"
   [complicated-obj]
   (let [tmpproxies (ref {})
@@ -71,14 +71,36 @@
   
 (deftest test-proxify
   (testing "proxify \"simple\" object"
-    (run-test-simple 42)
-    (run-test-simple "Forth")
-    (run-test-simple :1984)
-    (run-test-simple [5 8 \w]))
+    (run-test-proxify-simple 42)
+    (run-test-proxify-simple "Forth")
+    (run-test-proxify-simple :1984)
+    (run-test-proxify-simple [5 8 \w]))
   (testing "proxify \"complicated\" object"
-    (run-test-complicated #(str 'boo))
-    (run-test-complicated assoc)))
-    
+    (run-test-proxify-complicated #(str 'boo))
+    (run-test-proxify-complicated assoc)))
+
+(defn run-test-deproxify-simple
+  "Run proxy->obj test on the proxy of a \"simple\" object"
+  [simple-proxy]
+  (let [tmprevproxies (ref {})
+        deproxywannabe (sut/proxy->obj tmprevproxies simple-proxy)]
+    (is (or (nil? deproxywannabe) (false? deproxywannabe)))))
+
+(defn run-test-deproxify-complicated
+  "Run a proxy->obj test on the proxy of a \"complicated\" object"
+  [obj]
+  (let [tmprevproxies (ref {(str 'dummy-key2) obj})
+        proxy {:pod.tddpirate.condwalk/proxy (str 'dummy-key2)}]
+    (is (= obj (sut/proxy->obj tmprevproxies proxy)))))
+
+(deftest test-deproxify
+  (testing "deproxify \"simple\" object"
+    (run-test-deproxify-simple 43)
+    (run-test-deproxify-simple "Fifth")
+    (run-test-deproxify-simple 1985))
+  (testing "deproxify \"complicated\" object"
+    (run-test-deproxify-complicated ref)
+    (run-test-deproxify-complicated str)))
 
 
 ;; !!! Use with-redefs to redefine java.util.UUID/randomUUID
