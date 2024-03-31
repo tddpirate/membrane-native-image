@@ -53,7 +53,7 @@
         tmpUUIDfunc #(str 'dummy-key)
         proxywannabe (sut/obj->proxy tmpproxies tmprevproxies tmpUUIDfunc simple-obj)
         ]
-    (is (not proxywannabe))
+    (is (= simple-obj proxywannabe))
     (is (= {} @tmpproxies))
     (is (= {} @tmprevproxies))))
 
@@ -85,28 +85,29 @@
     (run-test-proxify-complicated #(str 'boo))
     (run-test-proxify-complicated assoc)))
 
-(defn run-test-deproxify-simple
-  "Run proxy->obj test on the proxy of a \"simple\" object"
-  [simple-proxy]
+(defn run-test-deproxify-approval-simple
+  "Run proxy?*+proxy->obj tests on the proxy of a \"simple\" object"
+  [simple-proxy-value]
   (let [tmprevproxies (ref {})
-        deproxywannabe (sut/proxy->obj tmprevproxies simple-proxy)]
-    (is (or (nil? deproxywannabe) (false? deproxywannabe)))))
+        deproxywannabe (sut/proxy?* simple-proxy-value)]
+    (is (or (nil? deproxywannabe) (false? deproxywannabe)) (str "approving " simple-proxy-value))
+    (is (= simple-proxy-value (sut/proxy->obj tmprevproxies simple-proxy-value)) (str "transforming " simple-proxy-value))))
 
-(defn run-test-deproxify-complicated
-  "Run a proxy->obj test on the proxy of a \"complicated\" object"
+(defn run-test-deproxify-approval-complicated
+  "Run a proxy?* test on the proxy of a \"complicated\" object"
   [obj]
   (let [tmprevproxies (ref {(str 'dummy-key2) obj})
-        proxy {:pod.tddpirate.condwalk/proxy (str 'dummy-key2)}]
-    (is (= obj (sut/proxy->obj tmprevproxies proxy)))))
+        proxy-value {:pod.tddpirate.condwalk/proxy (str 'dummy-key2)}]
+    (is (= obj (sut/proxy->obj tmprevproxies proxy-value)))))
 
-(deftest test-deproxify-primitives
-  (testing "deproxify \"simple\" object"
-    (run-test-deproxify-simple 43)
-    (run-test-deproxify-simple "Fifth")
-    (run-test-deproxify-simple 1985))
-  (testing "deproxify \"complicated\" object"
-    (run-test-deproxify-complicated ref)
-    (run-test-deproxify-complicated str)))
+(deftest test-deproxify-approval
+  (testing "deproxify-approval \"simple\" object"
+    (run-test-deproxify-approval-simple 43)
+    (run-test-deproxify-approval-simple "Fifth")
+    (run-test-deproxify-approval-simple 1985))
+  (testing "deproxify-approval \"complicated\" object"
+    (run-test-deproxify-approval-complicated ref)
+    (run-test-deproxify-approval-complicated str)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests for
@@ -149,13 +150,15 @@
   (let [proxy1 (sut/proxify '(+ inc))
         keyplus (get @sut/proxies +)
         keyinc (get @sut/proxies inc)]
-    (is (= '({:pod.tddpirate.condwalk/proxy keyplus} {:pod.tddpirate.condwalk/proxy inc}) proxy1))))
+    (println "!!! DEBUG test-proxify: proxies =" @sut/proxies "revproxies =" @sut/revproxies)
+    (is (= (list {:pod.tddpirate.condwalk/proxy keyplus} {:pod.tddpirate.condwalk/proxy inc}) proxy1))))
 
 (deftest test-deproxify
   (is (= 1 (sut/deproxify 1)))
   (is (= '("c" :d 8) (sut/deproxify '("c" :d 8))))
   (let [keyminus (:pod.tddpirate.condwalk/proxy (sut/proxify -))
         keydec (:pod.tddpirate.condwalk/proxy (sut/proxify dec))]
-    (is (= '(- dec) (sut/deproxify '({:pod.tddpirate.condwalk/proxy keyminus} {:pod.tddpirate.condwalk/proxy keydec}))))))
+    (println "!!! DEBUG test-deproxify: proxies =" @sut/proxies "revproxies =" @sut/revproxies)
+    (is (= '(- dec) (sut/deproxify (list {:pod.tddpirate.condwalk/proxy keyminus} {:pod.tddpirate.condwalk/proxy keydec}))))))
 
-;; Our 'approve' function for proxify is simply 'simple-obj?'.
+

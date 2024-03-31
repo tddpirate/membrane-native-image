@@ -63,9 +63,9 @@
 ;; Unescape proxy of a "complicated object"
 (defn proxy?*
   "Return a falsey value (nil or false) if the argument is not a proxy.
-  Otherwise, return a truthy value which happens to be the proxied object.
+  Otherwise, return a truthy value which happens to be the proxy object's key.
   Note that {::proxy false} would be misidentified, but it should never occur
-  because false and nil are \"simple\" objects."
+  because we expect keys to be UUID strings."
   [form]
   (and (map? form) (::proxy form)))
 
@@ -123,6 +123,7 @@
 (defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
 
 
+;; Our 'approve' function for proxify is simply 'simple-obj?'.
 (defn proxify
   "Traverse the argument form and transform any \"complex\" item in it
   into its proxy."
