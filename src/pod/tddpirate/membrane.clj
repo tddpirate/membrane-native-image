@@ -8,7 +8,7 @@
             [membrane.basic-components]
             [clojure.edn :as edn]
             [clojure.java.io :as io])
-  (:use     [pod.tddpirate.condwalk])
+  (:require [pod.tddpirate.condwalk :refer [proxify deproxify]])
   (:import [java.io PushbackInputStream])
   (:gen-class))
 
@@ -153,6 +153,7 @@
                                 args (get message "args")
                                 args (read-string args)
                                 args (try
+                                       (debug "!!! DEBUG membrane.clj: trying to read args, what tag literal is there? args =" args)
                                        (edn/read-string args)
                                        (catch Throwable e
                                          (binding [*out* *err*]
@@ -169,8 +170,8 @@
                                            nil)))
                                 ]
                             (if-let [f (var-get (lookup var))]
-                              (let [value (pr-str (apply f args))
-                                    reply {"value" value
+                              (let [value (pr-str (apply f (deproxify args)))
+                                    reply {"value" (proxify value)
                                            "id" id
                                            "status" ["done"]}]
                                 (debug "===> executing :invoke execution")
