@@ -26,6 +26,7 @@
 (defn simple-obj?
   "Is the argument fully serializable via EDN?"
   [obj]
+  (println "!!! DEBUG simple-obj?: obj =" obj)
   (or
    (number? obj)
    (string? obj)
