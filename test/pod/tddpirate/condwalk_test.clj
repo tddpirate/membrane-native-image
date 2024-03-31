@@ -148,9 +148,6 @@
   (let [proxy1 (sut/proxify (list + inc))
         keyplus (get @sut/proxies +)
         keyinc (get @sut/proxies inc)]
-    (println "!!! DEBUG test-proxify: proxy1 =" proxy1 "keyplus =" keyplus "keyinc =" keyinc)
-    (println "!!! DEBUG test-proxify: proxies =" @sut/proxies)
-    (println "                        revproxies =" @sut/revproxies)
     (is (= (list {:pod.tddpirate.condwalk/proxy keyplus} {:pod.tddpirate.condwalk/proxy keyinc}) proxy1))))
 
 (deftest test-deproxify
@@ -158,8 +155,6 @@
   (is (= (list "c" :d 8) (sut/deproxify (list "c" :d 8))))
   (let [keyminus (:pod.tddpirate.condwalk/proxy (sut/proxify -))
         keydec (:pod.tddpirate.condwalk/proxy (sut/proxify dec))]
-    (println "!!! DEBUG test-deproxify: keyminus =" keyminus "keydec =" keydec)
-    (println "!!! DEBUG test-deproxify: proxies =" @sut/proxies "revproxies =" @sut/revproxies)
     (is (= (list - dec) (sut/deproxify (list {:pod.tddpirate.condwalk/proxy keyminus} {:pod.tddpirate.condwalk/proxy keydec}))))))
 
 

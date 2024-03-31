@@ -26,7 +26,6 @@
 (defn simple-obj?
   "Is the argument fully serializable via EDN?"
   [obj]
-  (println "!!! DEBUG simple-obj?: obj =" obj)
   (or
    (number? obj)
    (string? obj)
@@ -50,7 +49,6 @@
   - UUID-func - creates random strings, typically java.util.UUID/randomUUID
   "
   [proxies revproxies UUID-func obj]
-  (println "!!! DEBUG: obj->proxy: obj =" obj " type =" (type obj) " simple-obj?" (simple-obj? obj))
   (if (simple-obj? obj)
     obj
     (if-let [uuidexists (get @proxies obj)] ;; Otherwise, proxy it.
@@ -81,10 +79,7 @@
   "
   [revproxies arg]
   (if-let [proxy (proxy?* arg)]
-    (do
-      (println "!!! DEBUG proxy->obj: arg =" arg " proxy =" proxy)
-      (get @revproxies proxy)
-      )
+    (get @revproxies proxy)
     arg))
 
 
