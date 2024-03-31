@@ -50,6 +50,7 @@
   - UUID-func - creates random strings, typically java.util.UUID/randomUUID
   "
   [proxies revproxies UUID-func obj]
+  (println "!!! DEBUG: obj->proxy: obj =" obj " type =" (type obj) " simple-obj?" (simple-obj? obj))
   (if (simple-obj? obj)
     obj
     (if-let [uuidexists (get @proxies obj)] ;; Otherwise, proxy it.
@@ -65,7 +66,9 @@
 (defn proxy?*
   "Return a falsey value (nil or false) if the argument is not a proxy.
   Otherwise, return a truthy value which happens to be the proxy object's key.
-  Note that {::proxy false} would be misidentified, but it should never occur
+  Notes:
+  1. The polarity of the test is opposite that of simple-obj?
+  2. {::proxy false} would be misidentified, but it should never occur
   because we expect keys to be UUID strings."
   [form]
   (and (map? form) (::proxy form)))
@@ -78,7 +81,10 @@
   "
   [revproxies arg]
   (if-let [proxy (proxy?* arg)]
-    (get @revproxies proxy)
+    (do
+      (println "!!! DEBUG proxy->obj: arg =" arg " proxy =" proxy)
+      (get @revproxies proxy)
+      )
     arg))
 
 
@@ -102,7 +108,9 @@
   If approved, traverse subnodes, using func to transform each of
   them.
   Build data structure of the transformed subnodes, having the same type
-  as the form. This data structure will then be transformed by func.
+  as the form. This data structure will then be transformed by func
+  (if we wish to transform only \"complicated\" forms, the form won't be
+  transformed because it would be \"simple\").
 
   If approve returned false/nil, apply func only to the whole form without
   recursing into its subnodes.
@@ -140,7 +148,7 @@
   into its original form.
   Proxy objects are simple maps, so their contents are not disturbed."
   [form]
-  (condwalk proxy?*
+  (condwalk (complement proxy?*)
             (partial proxy->obj revproxies)
             form))
 

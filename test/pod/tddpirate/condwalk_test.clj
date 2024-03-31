@@ -4,11 +4,6 @@
    [pod.tddpirate.condwalk :as sut] ;; sut = Software Under Test
    [clojure.test :refer [deftest is testing]]))
 
-#_(deftest test-basic-tests
-  (testing "context 1 -FAIL"
-    (is (= 0 1))
-    )
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests for
@@ -30,7 +25,8 @@
     (is (sut/simple-obj? ::seventy-five))                   ;; keyword
     (is (sut/simple-obj? 'seventy-three))                   ;; symbol
     (is (sut/simple-obj? nil))                              ;; nil
-    (is (sut/simple-obj? '(3 ::proxy "simply")))            ;; list
+    (is (sut/simple-obj? '(3 ::proxy "simply")))            ;; unevaluated list
+    (is (sut/simple-obj? (list 3 ::proxy "simply")))        ;; list
     (is (sut/simple-obj? (list 'a 'b nil 3 4)))             ;; list
     (is (sut/simple-obj? [4 7 \v]))                         ;; vector
     (is (sut/simple-obj? #{1 4 9 "sixteen" :twenty-five}))  ;; set
@@ -134,7 +130,9 @@
     (is (= 1 (sut/condwalk approve-always number-inc 0)))
     (is (= "*A*" (sut/condwalk approve-always number-inc "A")))
     (is (= [2 5 10 [17 26 [37]]] (sut/condwalk approve-always number-inc [1 4 9 [16 25 [36]]])))
-    (is (= '(2 5 10 (17 26 (37))) (sut/condwalk approve-always number-inc '(1 4 9 (16 25 (36)))))))
+    (is (= '(2 5 10 (17 26 (37))) (sut/condwalk approve-always number-inc '(1 4 9 (16 25 (36))))))
+    (is (= (list 2 5 10 (list 17 26 (list 37))) (sut/condwalk approve-always number-inc '(1 4 9 (16 25 (36))))))
+    (is (= (list 2 5 10 (list 17 26 (list 37))) (sut/condwalk approve-always number-inc (list 1 4 9 (list 16 25 (list 36)))))))
   (testing "complicated condwalk cases"
     (is (= [2 5 10 [1 2] [4 5] 26] (sut/condwalk #((complement =) [1 2] %) number-inc [1 4 9 [1 2] [3 4] 25])))))
 
@@ -147,20 +145,22 @@
 (deftest test-proxify
   (is (= 1 (sut/proxify 1)))
   (is (= '("a" :b 7) (sut/proxify '("a" :b 7))))
-  (let [proxy1 (sut/proxify '(+ inc))
+  (let [proxy1 (sut/proxify (list + inc))
         keyplus (get @sut/proxies +)
         keyinc (get @sut/proxies inc)]
     (println "!!! DEBUG test-proxify: proxy1 =" proxy1 "keyplus =" keyplus "keyinc =" keyinc)
-    (println "!!! DEBUG test-proxify: proxies =" @sut/proxies "revproxies =" @sut/revproxies)
-    (is (= (list {:pod.tddpirate.condwalk/proxy keyplus} {:pod.tddpirate.condwalk/proxy inc}) proxy1))))
+    (println "!!! DEBUG test-proxify: proxies =" @sut/proxies)
+    (println "                        revproxies =" @sut/revproxies)
+    (is (= (list {:pod.tddpirate.condwalk/proxy keyplus} {:pod.tddpirate.condwalk/proxy keyinc}) proxy1))))
 
 (deftest test-deproxify
   (is (= 1 (sut/deproxify 1)))
-  (is (= '("c" :d 8) (sut/deproxify '("c" :d 8))))
+  (is (= (list "c" :d 8) (sut/deproxify (list "c" :d 8))))
   (let [keyminus (:pod.tddpirate.condwalk/proxy (sut/proxify -))
         keydec (:pod.tddpirate.condwalk/proxy (sut/proxify dec))]
     (println "!!! DEBUG test-deproxify: keyminus =" keyminus "keydec =" keydec)
     (println "!!! DEBUG test-deproxify: proxies =" @sut/proxies "revproxies =" @sut/revproxies)
-    (is (= '(- dec) (sut/deproxify (list {:pod.tddpirate.condwalk/proxy keyminus} {:pod.tddpirate.condwalk/proxy keydec}))))))
+    (is (= (list - dec) (sut/deproxify (list {:pod.tddpirate.condwalk/proxy keyminus} {:pod.tddpirate.condwalk/proxy keydec}))))))
 
 
+;; End of condwalk_test.clj
