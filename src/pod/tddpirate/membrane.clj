@@ -23,7 +23,7 @@
 (def stdin (PushbackInputStream. System/in))
 
 (defn write [v]
-  (debug "--> writing bencode data:\n" v)
+  (debug "--> writing bencode data:" v)
   (bencode/write-bencode System/out v)
   (.flush System/out))
 
@@ -32,6 +32,19 @@
 
 (defn read []
   (bencode/read-bencode stdin))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Special variants of membrane functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(create-ns 'pod.tddpirate.x)
+(intern (find-ns 'pod.tddpirate.x) 'run*
+        (fn
+          ;; "Used instead of java2d/run due to special handling of first argument"
+          [constfn & arg]
+          (debug "!!! DEBUG: invoking run*")
+          (apply membrane.java2d/run (constantly constfn) arg)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Create a lookup table from a namespace
@@ -45,12 +58,12 @@
          (= (type ns) clojure.lang.Namespace)
          (symbol? symb)]}
   (let [fullpodns (str podprefix (str ns))]
-    ;;(println "!!! DEBUG\npodprefix =" podprefix "\nns =" ns "\nsymb =" symb "\nfullpodns =" fullpodns "\n!!! DEBUG (end)")
-    ;;(println "!!!------------")
-    ;;(println "!!! symbol 1" (symbol fullpodns (str symb)))
-    ;;(println "!!!------------")
-    ;;(println "!!! symbol 2" (ns-resolve ns symb))
-    ;;(println "!!!------------")
+    (debug "!!! DEBUG" "podprefix =" podprefix "ns =" ns "symb =" symb "fullpodns =" fullpodns "!!! DEBUG (end)")
+    (debug "!!!------------")
+    (debug "!!! symbol 1" (symbol fullpodns (str symb)))
+    (debug "!!!------------")
+    (debug "!!! symbol 2" (ns-resolve ns symb))
+    (debug "!!!------------")
     [(symbol fullpodns (str symb))
      (ns-resolve ns symb)]))
 
@@ -68,10 +81,14 @@
 (def lookup
   "The caller needs to apply var-get to the result of (lookup 'namespace/name)"
   (merge
+   { "pod.tddpirate.x" "run*" }
    (nsmap->lookup 'membrane.java2d)
    (nsmap->lookup 'membrane.ui)
    (nsmap->lookup 'membrane.component)
    (nsmap->lookup 'membrane.basic-components)))
+(debug "!!! lookup printout --------------------------")
+(debug lookup)
+(debug "!!! end of lookup printout -------------------")
 ;; obsolete version
 ;; {'pod.borkdude.clj-kondo/merge-configs clj-kondo/merge-configs
 ;;  'clj-kondo.core/merge-configs clj-kondo/merge-configs
@@ -139,7 +156,9 @@
             :describe (do
                         (debug "===> executing :describe")
                         (write {"format" "edn"
-                                "namespaces" [(describe-ns "pod.tddpirate." (find-ns 'membrane.java2d))
+                                "namespaces" [{"name" "pod.tddpirate.x"
+                                               "vars" [{"name" "run*"}]}
+                                              (describe-ns "pod.tddpirate." (find-ns 'membrane.java2d))
                                               (describe-ns "pod.tddpirate." (find-ns 'membrane.ui))
                                               (describe-ns "pod.tddpirate." (find-ns 'membrane.component))
                                               (describe-ns "pod.tddpirate." (find-ns 'membrane.basic-components))
