@@ -37,13 +37,11 @@
 ;; Special variants of membrane functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(create-ns 'pod.tddpirate.x)
-(intern (find-ns 'pod.tddpirate.x) 'run*
-        (fn
-          ;; "Used instead of java2d/run due to special handling of first argument"
-          [constfn & arg]
-          (debug "!!! DEBUG: invoking run*")
-          (apply membrane.java2d/run (constantly constfn) arg)))
+(defn run*
+  "Used instead of java2d/run due to special handling of first argument"
+  [constfn & arg]
+  (debug "!!! DEBUG: invoking run*")
+  (apply membrane.java2d/run (constantly constfn) arg))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -67,21 +65,28 @@
     [(symbol fullpodns (str symb))
      (ns-resolve ns symb)]))
 
+(defn nsmap->lookup*
+  "Transform the output of ns-map into a map which transforms
+  pod.tddpirate.* variables into membrane variables.
+  The argument is a ns object."
+  [ns]
+  (->> (map #(ns+symbol->2tuple "pod.tddpirate." ns %)
+            (-> ns ns-map keys))
+       (into {})))
+
 (defn nsmap->lookup
   "Transform the output of ns-map into a map which transforms
   pod.tddpirate.* variables into membrane variables.
   The argument is ns symbol, however."
   [nssym]
   {:pre [(symbol? nssym)]}
-  (let [ns (find-ns nssym)]
-    (->> (map #(ns+symbol->2tuple "pod.tddpirate." ns %) (-> ns ns-map keys))
-         (into {}))))
+  (nsmap->lookup* (find-ns nssym)))
 
 
 (def lookup
   "The caller needs to apply var-get to the result of (lookup 'namespace/name)"
   (merge
-   (nsmap->lookup 'x)  ;;{ "pod.tddpirate.x" "run*" }
+   { (symbol "pod.tddpirate.membrane" "run*") #'run* }
    (nsmap->lookup 'membrane.java2d)
    (nsmap->lookup 'membrane.ui)
    (nsmap->lookup 'membrane.component)
@@ -156,7 +161,7 @@
             :describe (do
                         (debug "===> executing :describe")
                         (write {"format" "edn"
-                                "namespaces" [{"name" "pod.tddpirate.x"
+                                "namespaces" [{"name" "pod.tddpirate.membrane"
                                                "vars" [{"name" "run*"}]}
                                               (describe-ns "pod.tddpirate." (find-ns 'membrane.java2d))
                                               (describe-ns "pod.tddpirate." (find-ns 'membrane.ui))
