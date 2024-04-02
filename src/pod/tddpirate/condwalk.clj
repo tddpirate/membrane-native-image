@@ -35,7 +35,7 @@
    (list? obj)
    (vector? obj)
    (set? obj)
-   (map? obj)
+   (= clojure.lang.PersistentArrayMap (type obj)) ;; (map? obj)
    (nil? obj)))
 
 
@@ -126,12 +126,18 @@
 (def revproxies (ref {})) ;; uuid -> object
 (defn UUID-func [] (java.util.UUID/randomUUID)) ;; Redefine in unit tests.
 
+(require '[clojure.java.io :as io])
+(defn debug2 [& args]
+  (binding [*out* (io/writer "/tmp/debug.log" :append true)]
+    (apply prn args)))
+
 
 ;; Our 'approve' function for proxify is simply 'simple-obj?'.
 (defn proxify
   "Traverse the argument form and transform any \"complex\" item in it
   into its proxy."
   [form]
+  (debug2 "!!! DEBUG: proxifying" form)
   (condwalk simple-obj?
             (partial obj->proxy proxies revproxies UUID-func) ;; obj->proxy invokes simple-obj? too - how to eliminate the double invocation?
             form))
@@ -143,6 +149,7 @@
   into its original form.
   Proxy objects are simple maps, so their contents are not disturbed."
   [form]
+  (debug2 "!!! DEBUG: deproxifying" form)
   (condwalk (complement proxy?*)
             (partial proxy->obj revproxies)
             form))

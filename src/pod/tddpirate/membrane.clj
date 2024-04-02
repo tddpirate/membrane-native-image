@@ -188,11 +188,14 @@
                                            (write reply)
                                            nil)))
                                 ]
+                            (debug "!!! DEBUG: args =" args)
+                            (debug "!!! DEBUG: var =" var "var-get =" (lookup var))
                             (if-let [f (var-get (lookup var))]
-                              (let [value (pr-str (apply f (deproxify args)))
-                                    reply {"value" (proxify value)
+                              (let [value (pr-str (proxify (apply f (deproxify args))))
+                                    reply {"value" value
                                            "id" id
                                            "status" ["done"]}]
+                                (debug "!!! DEBUG: value =" value)
                                 (debug "===> executing :invoke execution")
                                 (write reply))
                               (throw (ex-info (str "Var not found: " var) {}))))
