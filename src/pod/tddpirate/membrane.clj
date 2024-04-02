@@ -81,7 +81,7 @@
 (def lookup
   "The caller needs to apply var-get to the result of (lookup 'namespace/name)"
   (merge
-   { "pod.tddpirate.x" "run*" }
+   (nsmap->lookup 'x)  ;;{ "pod.tddpirate.x" "run*" }
    (nsmap->lookup 'membrane.java2d)
    (nsmap->lookup 'membrane.ui)
    (nsmap->lookup 'membrane.component)
